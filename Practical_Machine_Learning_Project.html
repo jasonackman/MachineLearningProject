@@ -123,6 +123,21 @@ $(document).ready(function () {
 </div>
 
 
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre><code>## Loading required package: ggplot2</code></pre>
+<pre class="r"><code>library(lattice)
+library(ggplot2)
+library(rpart)
+
+# Download the dataset
+download.file(url = &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;,
+              destfile = &quot;~/pml-training.csv&quot;)
+
+# Read in the data file.
+dataset &lt;- read.csv(file = &quot;~/pml-training.csv&quot;)
+
+colnames &lt;- names(dataset)</code></pre>
 <div id="background" class="section level2">
 <h2>Background</h2>
 <p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.</p>
@@ -139,6 +154,124 @@ $(document).ready(function () {
 <div id="feature-selection" class="section level2">
 <h2>Feature Selection</h2>
 <p>Upon inspection of the dataset, the were a number of columns that are not candidates for features in the model.</p>
+<pre class="r"><code># Predict column
+predict.column &lt;- &quot;classe&quot;
+
+# Columns that are considered id columns,
+exclude.id.columns &lt;- c(&quot;X&quot;,
+                        &quot;user_name&quot;,
+                        &quot;raw_timestamp_part_1&quot;,
+                        &quot;raw_timestamp_part_2&quot;,
+                        &quot;cvtd_timestamp&quot;,
+                        &quot;new_window&quot;,
+                        &quot;num_window&quot;)
+
+# Missing value columns
+exclude.na.columns &lt;- c(&quot;kurtosis_roll_belt&quot;,
+                        &quot;kurtosis_picth_belt&quot;,
+                        &quot;kurtosis_yaw_belt&quot;,
+                        &quot;skewness_roll_belt&quot;,
+                        &quot;skewness_roll_belt.1&quot;,
+                        &quot;skewness_yaw_belt&quot;,
+                        &quot;max_roll_belt&quot;,
+                        &quot;max_picth_belt&quot;,
+                        &quot;max_yaw_belt&quot;,
+                        &quot;min_roll_belt&quot;,
+                        &quot;min_pitch_belt&quot;,
+                        &quot;min_yaw_belt&quot;,
+                        &quot;amplitude_roll_belt&quot;,
+                        &quot;amplitude_pitch_belt&quot;,
+                        &quot;amplitude_yaw_belt&quot;,
+                        &quot;var_total_accel_belt&quot;,
+                        &quot;avg_roll_belt&quot;,
+                        &quot;stddev_roll_belt&quot;,
+                        &quot;var_roll_belt&quot;,
+                        &quot;avg_pitch_belt&quot;,
+                        &quot;stddev_pitch_belt&quot;,
+                        &quot;var_pitch_belt&quot;,
+                        &quot;avg_yaw_belt&quot;,
+                        &quot;stddev_yaw_belt&quot;,
+                        &quot;var_yaw_belt&quot;,
+                        &quot;var_accel_arm&quot;,
+                        &quot;avg_roll_arm&quot;,
+                        &quot;stddev_roll_arm&quot;,
+                        &quot;var_roll_arm&quot;,
+                        &quot;avg_pitch_arm&quot;,
+                        &quot;stddev_pitch_arm&quot;,
+                        &quot;var_pitch_arm&quot;,
+                        &quot;avg_yaw_arm&quot;,
+                        &quot;stddev_yaw_arm&quot;,
+                        &quot;var_yaw_arm&quot;,
+                        &quot;kurtosis_roll_arm&quot;,
+                        &quot;kurtosis_picth_arm&quot;,
+                        &quot;kurtosis_yaw_arm&quot;,
+                        &quot;skewness_roll_arm&quot;,
+                        &quot;skewness_pitch_arm&quot;,
+                        &quot;skewness_yaw_arm&quot;,
+                        &quot;max_roll_arm&quot;,
+                        &quot;max_picth_arm&quot;,
+                        &quot;max_yaw_arm&quot;,
+                        &quot;min_roll_arm&quot;,
+                        &quot;min_pitch_arm&quot;,
+                        &quot;min_yaw_arm&quot;,
+                        &quot;amplitude_roll_arm&quot;,
+                        &quot;amplitude_pitch_arm&quot;,
+                        &quot;amplitude_yaw_arm&quot;,
+                        &quot;kurtosis_roll_dumbbell&quot;,
+                        &quot;kurtosis_picth_dumbbell&quot;,
+                        &quot;kurtosis_yaw_dumbbell&quot;,
+                        &quot;skewness_roll_dumbbell&quot;,
+                        &quot;skewness_pitch_dumbbell&quot;,
+                        &quot;skewness_yaw_dumbbell&quot;,
+                        &quot;max_roll_dumbbell&quot;,
+                        &quot;max_picth_dumbbell&quot;,
+                        &quot;max_yaw_dumbbell&quot;,
+                        &quot;min_roll_dumbbell&quot;,
+                        &quot;min_pitch_dumbbell&quot;,
+                        &quot;min_yaw_dumbbell&quot;,
+                        &quot;amplitude_roll_dumbbell&quot;,
+                        &quot;amplitude_pitch_dumbbell&quot;,
+                        &quot;amplitude_yaw_dumbbell&quot;,
+                        &quot;var_accel_dumbbell&quot;,
+                        &quot;avg_roll_dumbbell&quot;,
+                        &quot;stddev_roll_dumbbell&quot;,
+                        &quot;var_roll_dumbbell&quot;,
+                        &quot;avg_pitch_dumbbell&quot;,
+                        &quot;stddev_pitch_dumbbell&quot;,
+                        &quot;var_pitch_dumbbell&quot;,
+                        &quot;avg_yaw_dumbbell&quot;,
+                        &quot;stddev_yaw_dumbbell&quot;,
+                        &quot;var_yaw_dumbbell&quot;,
+                        &quot;kurtosis_roll_forearm&quot;,
+                        &quot;kurtosis_picth_forearm&quot;,
+                        &quot;kurtosis_yaw_forearm&quot;,
+                        &quot;skewness_roll_forearm&quot;,
+                        &quot;skewness_pitch_forearm&quot;,
+                        &quot;skewness_yaw_forearm&quot;,
+                        &quot;max_roll_forearm&quot;,
+                        &quot;max_picth_forearm&quot;,
+                        &quot;max_yaw_forearm&quot;,
+                        &quot;min_roll_forearm&quot;,
+                        &quot;min_pitch_forearm&quot;,
+                        &quot;min_yaw_forearm&quot;,
+                        &quot;amplitude_roll_forearm&quot;,
+                        &quot;amplitude_pitch_forearm&quot;,
+                        &quot;amplitude_yaw_forearm&quot;,
+                        &quot;var_accel_forearm&quot;,
+                        &quot;avg_roll_forearm&quot;,
+                        &quot;stddev_roll_forearm&quot;,
+                        &quot;var_roll_forearm&quot;,
+                        &quot;avg_pitch_forearm&quot;,
+                        &quot;stddev_pitch_forearm&quot;,
+                        &quot;var_pitch_forearm&quot;,
+                        &quot;avg_yaw_forearm&quot;,
+                        &quot;stddev_yaw_forearm&quot;,
+                        &quot;var_yaw_forearm&quot;)
+
+# Now that we have the lists of columns to exclude, let's remove those columns here.
+feature.columns &lt;- setdiff(colnames, exclude.na.columns)
+feature.columns &lt;- setdiff(feature.columns, exclude.id.columns)
+feature.columns &lt;- setdiff(feature.columns, predict.column)</code></pre>
 <div id="prediction-column" class="section level3">
 <h3>Prediction Column</h3>
 <p>The prediction column classe will need to be removed as a candidate feature for the model.</p>
@@ -159,11 +292,40 @@ $(document).ready(function () {
 <div id="model-creation" class="section level2">
 <h2>Model Creation</h2>
 <p>In order to build the most accurate model, we will choose to use the Random Forest algorithm. We will leverage the caret package to provide convenience for cross validation and predicting. We will use k-fold cross validation with 5 folds in order to produce a more accurate model.</p>
+<pre class="r"><code># Now, we need to split the dataset into a testing set and a training set.
+set.seed(3433)
 
+inTrain = createDataPartition(dataset$classe, p = .7)[[1]]
+training = dataset[ inTrain,]
+testing = dataset[-inTrain,]
+
+
+# Now, we will train a model with random forest.
+fmla &lt;- as.formula(paste(paste(predict.column, &quot;~ &quot;), paste(feature.columns, collapse= &quot;+&quot;)))
+
+# Train the model using random forest and 5 k-fold cross validation.
+model.rf &lt;- train(fmla, 
+                  data=training, 
+                  method=&quot;rf&quot;,
+                  trControl=trainControl(method=&quot;cv&quot;, number=5))</code></pre>
+<pre><code>## Loading required package: randomForest</code></pre>
+<pre><code>## randomForest 4.6-12</code></pre>
+<pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>## 
+## Attaching package: 'randomForest'</code></pre>
+<pre><code>## The following object is masked from 'package:ggplot2':
+## 
+##     margin</code></pre>
 </div>
 <div id="evaluation" class="section level2">
 <h2>Evaluation</h2>
 <p>We can now test the accuracy of the model by calcuating the out of sample accuracy rate and error rate. We can do so because we only trained the model with 70% of the dataset and left 30% for testing.</p>
+<pre class="r"><code># Now, let's use the model to predict the test outcomes.
+test.rf &lt;- predict(model.rf, newdata = testing)
+
+# Determine the out of sample error rate of the model based on the test cases set aside.
+accuracy &lt;- sum(test.rf == testing$classe) / length(testing$classe)
+errorrate &lt;- 1 - accuracy</code></pre>
 <p>The accuracy of the random forest model is 0.9918437 and the error rate is 0.0081563.</p>
 </div>
 <div id="conclusion" class="section level2">
